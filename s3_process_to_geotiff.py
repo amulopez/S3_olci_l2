@@ -7,11 +7,11 @@
 # TSM PROCESSING WORKFLOW: FROM RAW DATA TO DAILY COMPOSITES
 # ==============================================================================
 # 
-# This workflow processes Sentinel-3 OLCI and MERIS ocean color products 
-# to create daily Total Suspended Matter (TSM) composite rasters clipped to a region of interest
+# This workflow processes Sentinel-3 OLCI and MERIS ocean color products to create daily
+# Total Suspended Matter (TSM) composite rasters clipped to a region of interest
 #
 # WORKFLOW OVERVIEW:
-# Step 1: Unzip raw .zip files and delete originals
+# Step 1: Unzip raw .zip files and DELETE original zip file downloads (users are advised to save backup zip data if needed)
 # Step 2: Clean up netCDF files (keep only needed variables)
 # Step 3: Convert netCDF swath data to georeferenced GeoTIFF rasters
 # Step 4: Reclassify negative TSM values to zero
