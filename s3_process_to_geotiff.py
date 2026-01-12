@@ -10,18 +10,23 @@
 # This workflow processes Sentinel-3 OLCI and MERIS ocean color products to create daily
 # Total Suspended Matter (TSM) composite rasters clipped to a region of interest
 #
-# WORKFLOW OVERVIEW:
-# Step 1: Unzip raw .zip files and DELETE original zip file downloads (users are advised to save backup zip data if needed)
+# ------------------
+# WORKFLOW OVERVIEW
+# ------------------
+# Step 1: Unzip raw .zip files and DELETE original zip file downloads (users advised to save backup zip data as needed)
 # Step 2: Clean up netCDF files (keep only needed variables)
 # Step 3: Convert netCDF swath data to georeferenced GeoTIFF rasters
 # Step 4: Reclassify negative TSM values to zero
 # Step 5: Clip rasters to Region of Interest (ROI) using shapefile
 # Step 6: Create daily composite rasters (merge multiple passes per day)
-# -----------------------------------
+# 
+# -----------------------------
 # REQUIRED USER CONFIGURATION
-# -----------------------------------
+# -----------------------------
 # Before running, users MUST edit the following paths/parameters:
+# 
 # For MERIS data use ".ZIP" in Step 1 / For Sentinel-3 data use ".zip" in Step 1 (line ~87)
+# 
 # Paths in the USER CONFIGURATION section
 #   Step 1 base_directory - path to folder containing zip files
 #   Step 2 files_to_keep - list of netCDF variables to retain, users specify as needed
