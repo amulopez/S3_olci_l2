@@ -85,6 +85,7 @@ OUTPUT_RES_DEG = 0.0027  # ~300 m at equator
 
 # ==============================================================================
 # STEP 1: UNZIP FILES
+# for MERIS data use ".ZIP" / for Sentinel-3 data use ".zip"
 # ==============================================================================
 
 def unzip_and_delete(directory):
