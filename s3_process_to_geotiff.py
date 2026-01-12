@@ -13,23 +13,23 @@
 # ------------------
 # WORKFLOW OVERVIEW
 # ------------------
-# Step 1: Unzip raw .zip files and DELETE original zip file downloads (users advised to save backup zip data as needed)
-# Step 2: Clean up netCDF files (keep only needed variables)
+# Step 1: Unzip and DELETE original zip file downloads (USERS ADVISED TO SAVE BACKUP ZIP DATA)
+# Step 2: Keeps specified netCDF files and deletes the rest
 # Step 3: Convert netCDF swath data to georeferenced GeoTIFF rasters
 # Step 4: Reclassify negative TSM values to zero
 # Step 5: Clip rasters to Region of Interest (ROI) using shapefile
-# Step 6: Create daily composite rasters (merge multiple passes per day)
+# Step 6: Create daily composite rasters (if multiple passes per day, otherwise single date acquistion retain unchanged)
 # 
 # -----------------------------
 # REQUIRED USER CONFIGURATION
 # -----------------------------
 # Before running, users MUST edit the following paths/parameters:
 # 
-# For MERIS data use ".ZIP" in Step 1 / For Sentinel-3 data use ".zip" in Step 1 (line ~87)
+# Line ~93 for MERIS data use ".ZIP" in Step 1 / For Sentinel-3 data use ".zip" in Step 1 
 # 
 # Paths in the USER CONFIGURATION section
 #   Step 1 base_directory - path to folder containing zip files
-#   Step 2 files_to_keep - list of netCDF variables to retain, users specify as needed
+#   Step 2 files_to_keep - list of netCDF variables to retain, USER SPECIFIES
 #   Step 5 roi_shape - path to ROI shapefile for clipping
 # --------------------------------------------------------------------------------
 
