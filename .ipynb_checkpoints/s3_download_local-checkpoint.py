@@ -25,9 +25,6 @@
 # batch_list    ~lines 353-366
 """
 
-# Bailey Notes: Would be good to have people be able to run the script as an executable with variables to fill
-# in in 1 line. Ex py -3.9 s3_download_local.py 
-
 import os
 import csv
 import json
@@ -84,9 +81,9 @@ class S3Downloader:
         # Default ROI (Southern California)
         # =======================
         self.roi = (
-            "POLYGON((-119.457859 32.369016, -116.883545 32.369016, "
-            "-116.883545 35.270920, -119.457859 35.270920, "
-            "-119.457859 32.369016))"
+            "POLYGON((-121.343994 32.369016, -116.883545 32.369016, "
+            "-116.883545 35.270920, -121.343994 35.270920, "
+            "-121.343994 32.369016))"
         )
 
     # ====================================================================
@@ -350,7 +347,7 @@ class S3Downloader:
 if __name__ == "__main__":
 
     downloader = S3Downloader(
-        download_dir="/Users/bdmor/Documents/s3_products"
+        download_dir="/Users/lopezama/Documents/Blackwood/Palisades/s3_products"
     )
 
     batch_list = [

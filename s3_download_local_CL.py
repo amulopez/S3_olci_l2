@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
 """
 # Sentinel-3 OLCI Data Downloader - Local Computer Version
 # Contact: Mandy M. Lopez amanda.m.lopez@jpl.nasa.gov
@@ -12,27 +10,34 @@
 # As of August 2025 the full data record is split between two collections:
 #   EO:EUM:DAT:0556 04-25-16 to 04-28-21
 #   EO:EUM:DAT:0407 04-29-21 to 07-30-25
-# 
+#
 # BEFORE USING
 # Users must have EUMDAC credentials set up before using this script, see resources below for assistance with this--
 #   Tutorial https://gitlab.eumetsat.int/eumetlab/data-services/eumdac_data_store/-/blob/master/1_4_Sentinel3_data_access.ipynb
-#   EUMDAC package installed https://user.eumetsat.int/resources/user-guides/eumetsat-data-access-client-eumdac-guide 
-#   Credentials file formatted as a JSON stored in your home directory (Option 1: creating  .eumdac_credentials in home directory section of the tutorial)
-# 
-# USERS MUST EDIT 
-# ROI polygon coordinates (southern California ROI used in this example script) ~lines 81-87
-# download_dir  ~line 350
-# batch_list    ~lines 353-366
+#   EUMDAC package installed https://user.eumetsat.int/resources/user-guides/eumetsat-data-access-client-eumdac-guide
+#   Credentials file formatted as a JSON stored in your home directory (Option 1: creating .eumdac_credentials in home directory section of the tutorial)
+#
+# CLI USAGE (multi-batch; local computers)
+#   python3.9 s3_download_local.py --download_dir "/path/to/s3_products" \
+#       --bbox MIN_LON MIN_LAT MAX_LON MAX_LAT \
+#       --batch "Name,YYYY-MM-DD,YYYY-MM-DD,0407" \
+#       --batch "Name2,YYYY-MM-DD,YYYY-MM-DD,0556"
+#
+# ROI OPTIONS
+#   --bbox MIN_LON MIN_LAT MAX_LON MAX_LAT   (auto-converted to WKT polygon)
+#   --roi_wkt "POLYGON((lon lat, lon lat, ...))"
+#
+# NOTES
+# - If ROI is not provided, the script uses the default ROI in S3Downloader (Southern California example).
+# - Each --batch entry is parsed as: "name,start,end,collection" where collection is optional (defaults to 0407).
 """
-
-# Bailey Notes: Would be good to have people be able to run the script as an executable with variables to fill
-# in in 1 line. Ex py -3.9 s3_download_local.py 
 
 import os
 import csv
 import json
 import datetime
 import shutil
+import argparse
 import eumdac
 
 
@@ -193,7 +198,8 @@ class S3Downloader:
 
                 except Exception as error:
                     dl_time = (datetime.datetime.now() - download_start).total_seconds()
-                    print(f"✗ Failed: {str(error)[:50]}")
+                    #print(f"✗ Failed: {str(error)[:50]}")
+                    print(f"✗ Failed: {error}")
                     self._log_result(
                         log_file, batch_name, product_name,
                         zip_filename, "FAILED",
@@ -206,7 +212,7 @@ class S3Downloader:
                     if os.path.exists(file_path):
                         try:
                             os.remove(file_path)
-                        except:
+                        except Exception:
                             pass
 
             # ---------------------------------------------------
@@ -230,7 +236,7 @@ class S3Downloader:
             return None
 
     # ====================================================================
-    # MULTI-BATCH DOWNLOADER (NEW)
+    # MULTI-BATCH DOWNLOADER
     # ====================================================================
     def download_multiple_batches(self, batch_list):
         """
@@ -332,7 +338,7 @@ class S3Downloader:
         try:
             size_bytes = os.path.getsize(file_path)
             return round(size_bytes / (1024 * 1024), 2)
-        except:
+        except Exception:
             return None
 
     def _process_filename(self, product_name):
@@ -344,29 +350,136 @@ class S3Downloader:
 
 
 # ====================================================================
-# EXAMPLE USAGE: DOWNLOAD USER DEFINED BATCHES
+# CLI ENTRYPOINT (LOCAL MULTI-BATCH)
 # ====================================================================
+def make_batch_name(start, end):
+    """
+    Generate batch name as %b%d-%d_%Y
+    Example: 2018-01-04 to 2018-01-16 -> Jan04-16_2018
+    """
+    start_dt = datetime.datetime.strptime(start, "%Y-%m-%d")
+    end_dt = datetime.datetime.strptime(end, "%Y-%m-%d")
+
+    return (
+        f"{start_dt.strftime('%b')}"
+        f"{start_dt.strftime('%d')}-"
+        f"{end_dt.strftime('%d')}_"
+        f"{end_dt.strftime('%Y')}"
+    )
+
+    
+def bbox_to_wkt(min_lon, min_lat, max_lon, max_lat):
+    return (
+        f"POLYGON(({min_lon} {min_lat}, {max_lon} {min_lat}, "
+        f"{max_lon} {max_lat}, {min_lon} {max_lat}, "
+        f"{min_lon} {min_lat}))"
+    )
+
+
+def parse_batch_arg(batch_str):
+    """
+    Parse a --batch string.
+
+    Accepted formats:
+      "Name,YYYY-MM-DD,YYYY-MM-DD"
+      "Name,YYYY-MM-DD,YYYY-MM-DD,0407"
+      "YYYY-MM-DD,YYYY-MM-DD"
+      "YYYY-MM-DD,YYYY-MM-DD,0407"
+
+    If name is omitted, it is auto-generated as %b%d-%d_%Y
+    """
+    parts = [p.strip() for p in batch_str.split(",")]
+
+    if len(parts) not in (2, 3, 4):
+        raise ValueError(
+            f'Invalid --batch "{batch_str}". Use either:\n'
+            f'  "Name,YYYY-MM-DD,YYYY-MM-DD[,collection]" OR\n'
+            f'  "YYYY-MM-DD,YYYY-MM-DD[,collection]"'
+        )
+
+    # Detect whether a name was supplied
+    if parts[0][0].isdigit():
+        # No name provided
+        start = parts[0]
+        end = parts[1]
+        collection = parts[2] if len(parts) == 3 else "0407"
+        name = make_batch_name(start, end)
+    else:
+        # Name provided
+        name = parts[0]
+        start = parts[1]
+        end = parts[2]
+        collection = parts[3] if len(parts) == 4 else "0407"
+
+    # Validate dates
+    datetime.datetime.strptime(start, "%Y-%m-%d")
+    datetime.datetime.strptime(end, "%Y-%m-%d")
+
+    return {
+        "name": name,
+        "start": start,
+        "end": end,
+        "collection": collection
+    }
+    
+
 
 if __name__ == "__main__":
 
-    downloader = S3Downloader(
-        download_dir="/Users/bdmor/Documents/s3_products"
+    parser = argparse.ArgumentParser(
+        description="Download Sentinel-3 OLCI Level-2 products from EUMETSAT (multi-batch local downloader)"
     )
 
-    batch_list = [
-        {
-            "name": "Jan5-15_2018",
-            "start": "2018-01-04",  # Buffer by -1 day to ensure all data from date of interest are downloaded
-            "end": "2018-01-16",    # Buffer by +1 day to ensure all data from date of interest are downloaded
-            "collection": "0556"
-        },
-        {
-            "name": "Jan24-Feb19_2025",
-            "start": "2025-01-23",  # Buffer by -1 day to ensure all data from date of interest are downloaded
-            "end": "2025-02-20",    # Buffer by +1 day to ensure all data from date of interest are downloaded
-            "collection": "0407"
-        }
-    ]
+    parser.add_argument(
+        "--download_dir",
+        type=str,
+        required=True,
+        help="Directory where Sentinel-3 products will be downloaded"
+    )
 
+    # ROI options: either bbox or raw WKT
+    roi_group = parser.add_mutually_exclusive_group(required=False)
+
+    roi_group.add_argument(
+        "--roi_wkt",
+        type=str,
+        default=None,
+        help='ROI as WKT polygon, e.g. "POLYGON((lon lat, lon lat, ...))"'
+    )
+
+    roi_group.add_argument(
+        "--bbox",
+        nargs=4,
+        type=float,
+        metavar=("MIN_LON", "MIN_LAT", "MAX_LON", "MAX_LAT"),
+        default=None,
+        help="ROI bounding box as min_lon min_lat max_lon max_lat"
+    )
+
+    parser.add_argument(
+        "--batch",
+        action="append",
+        required=True,
+        help='Repeatable. Format: "Name,YYYY-MM-DD,YYYY-MM-DD,0407" (collection optional; defaults to 0407).'
+    )
+
+    args = parser.parse_args()
+
+    # Determine ROI override (if any). If None, S3Downloader default ROI is used.
+    roi = None
+    if args.roi_wkt:
+        roi = args.roi_wkt
+    elif args.bbox:
+        min_lon, min_lat, max_lon, max_lat = args.bbox
+        roi = bbox_to_wkt(min_lon, min_lat, max_lon, max_lat)
+
+    # Build batch_list
+    batch_list = []
+    for b in args.batch:
+        batch = parse_batch_arg(b)
+        if roi:
+            batch["roi"] = roi
+        batch_list.append(batch)
+
+    downloader = S3Downloader(download_dir=args.download_dir)
     downloader.download_multiple_batches(batch_list)
-
