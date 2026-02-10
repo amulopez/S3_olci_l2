@@ -32,7 +32,7 @@ parallel -j "$NCPUS" --eta --joblog parallel_joblog.tsv \
   'py -3.9 '"$PY_SCRIPT"' \
      --roi '"$ROI"' \
      --download_dir '"$DOWN_DIR"' \
-     --batch "{}"' \
+     --batch '"{}"' ' \
   :::: "$BATCH_LIST"
 
 
